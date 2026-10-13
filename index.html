@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173b32">
+<meta name="description" content="Aplicação simples para criar e guardar orçamentos de construção civil.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>ObraFácil — Orçamentos</title>
+<style>
+:root{--green:#173b32;--green2:#245b4c;--gold:#e2b75b;--bg:#f4f6f3;--card:#fff;--ink:#1c2925;--muted:#65736d;--line:#dfe6e1;--red:#a83232;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:16px}
+header{background:var(--green);color:white;padding:20px 16px 18px;position:sticky;top:0;z-index:5;box-shadow:0 3px 12px #0001}
+.head{max-width:900px;margin:auto;display:flex;align-items:center;gap:12px}.logo{width:48px;height:48px;border-radius:14px;background:var(--gold);color:var(--green);display:grid;place-items:center;font-size:27px;font-weight:900}.brand{font-weight:850;font-size:22px;letter-spacing:-.5px}.tag{font-size:12px;color:#d6e4dc;margin-top:2px}
+main{max-width:900px;margin:0 auto;padding:16px 14px 100px}.page{display:none}.page.active{display:block}
+h1{font-size:25px;margin:8px 0 5px;letter-spacing:-.5px}h2{font-size:18px;margin:0 0 12px}p{line-height:1.45}.muted{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 2px 5px #172c2210}.stat{font-size:26px;font-weight:850;margin-top:6px}.action-card{display:flex;flex-direction:column;gap:8px;min-height:120px;text-align:left;cursor:pointer}.action-card .emoji{font-size:28px}.action-card strong{font-size:16px}.action-card span{font-size:13px;color:var(--muted)}
+button,.button{border:0;border-radius:13px;padding:13px 15px;font-size:15px;font-weight:750;cursor:pointer;background:var(--green);color:white;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.gold{background:var(--gold);color:#172d25}button.danger{background:#fff0f0;color:var(--red)}button.small{min-height:36px;padding:8px 11px;font-size:13px;border-radius:10px}.full{width:100%}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.section{margin-top:18px}.field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:750;color:#40534a;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;padding:13px 12px;border:1px solid #ccd8d0;border-radius:12px;font:inherit;background:#fff;color:var(--ink);min-height:47px}.field textarea{min-height:82px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:white;color:var(--green);border-radius:999px;padding:9px 13px;font-size:13px;font-weight:750}.chip.selected{background:var(--green);color:white}
+.list{display:flex;flex-direction:column;gap:10px}.item{background:white;border:1px solid var(--line);border-radius:15px;padding:14px}.item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.item-title{font-weight:800}.item-sub{font-size:13px;color:var(--muted);margin-top:4px}.price{font-weight:850;white-space:nowrap}.totalbox{background:var(--green);color:white;border-radius:18px;padding:18px;margin:15px 0}.totalbox .big{font-size:30px;font-weight:900;margin-top:5px}.totalrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14px}.divider{border:0;border-top:1px solid var(--line);margin:14px 0}
+.bottomnav{position:fixed;bottom:0;left:0;right:0;z-index:10;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding:8px max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom));}
+.navinner{width:min(900px,100%);display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.navbtn{border-radius:12px;background:transparent;color:#65736d;display:flex;flex-direction:column;gap:3px;font-size:11px;padding:7px 2px;min-height:52px}.navbtn .ni{font-size:19px}.navbtn.active{background:#e9f0eb;color:var(--green)}
+.notice{padding:12px 14px;background:#fff7df;border:1px solid #f0dfaa;border-radius:13px;font-size:13px;line-height:1.45}.success{background:#e9f7ed;border-color:#c5e8cf}.empty{text-align:center;padding:28px 15px;color:var(--muted)}.empty .emoji{font-size:36px}
+.hidden{display:none!important}.right{text-align:right}.help{font-size:12px;color:var(--muted);margin-top:5px}.line-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+@media(min-width:650px){main{padding:22px 20px 100px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.brand{font-size:24px}}
+@media print{header,.bottomnav,.no-print,button{display:none!important}body{background:white}.page{display:none!important}#printArea{display:block!important}main{max-width:none;padding:0}.print-sheet{color:#111;font-size:12px}.print-sheet h1{font-size:23px}.print-sheet table{width:100%;border-collapse:collapse;margin-top:20px}.print-sheet th,.print-sheet td{border-bottom:1px solid #ddd;padding:8px;text-align:left}.print-sheet .print-total{text-align:right;font-size:18px;font-weight:bold;margin-top:18px}.print-sheet .print-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px}.print-sheet .print-brand{border-bottom:3px solid #173b32;padding-bottom:12px}}
+</style>
+</head>
+<body>
+<header><div class="head"><div class="logo">O</div><div><div class="brand">ObraFácil</div><div class="tag">Orçamentos de construção civil</div></div></div></header>
+<main>
+<section id="home" class="page active">
+<h1>Bom dia!</h1><p class="muted">Faça um orçamento de forma simples e rápida.</p>
+<div class="grid">
+<button class="card action-card" onclick="newQuote()"><span class="emoji">➕</span><strong>Novo orçamento</strong><span>Começar um orçamento para um cliente</span></button>
+<button class="card action-card" onclick="go('quotes')"><span class="emoji">📋</span><strong>Orçamentos guardados</strong><span>Consultar, editar ou imprimir</span></button>
+<button class="card action-card" onclick="go('catalog')"><span class="emoji">🧱</span><strong>Serviços e preços</strong><span>Alterar os seus preços</span></button>
+<button class="card action-card" onclick="go('settings')"><span class="emoji">⚙️</span><strong>Dados e cópias</strong><span>Empresa, mão de obra e segurança</span></button>
+</div>
+<div class="section grid">
+<div class="card"><div class="muted">Orçamentos guardados</div><div class="stat" id="statQuotes">0</div></div>
+<div class="card"><div class="muted">Valor total guardado</div><div class="stat" id="statValue">0,00 €</div></div>
+</div>
+<div class="section notice">🔒 Os dados ficam guardados neste dispositivo. Faça uma cópia de segurança regularmente, sobretudo antes de limpar os dados do navegador ou mudar de telemóvel.</div>
+</section>
+
+<section id="editor" class="page">
+<h1 id="editorTitle">Novo orçamento</h1><p class="muted">Preencha os dados e adicione os trabalhos necessários.</p>
+<div class="card section">
+<h2>1. Dados do cliente</h2>
+<div class="field"><label for="client">Nome do cliente</label><input id="client" placeholder="Ex.: João Silva"></div>
+<div class="row">
+<div class="field"><label for="clientPhone">Telefone</label><input id="clientPhone" inputmode="tel" placeholder="Opcional"></div>
+<div class="field"><label for="quoteDate">Data</label><input id="quoteDate" type="date"></div>
+</div>
+<div class="field"><label for="jobAddress">Morada da obra</label><input id="jobAddress" placeholder="Local onde será feito o trabalho"></div>
+<div class="row">
+<div class="field"><label for="validity">Validade (dias)</label><input id="validity" type="number" min="0" value="15"></div>
+<div class="field"><label for="discount">Desconto (€)</label><input id="discount" type="number" min="0" step="0.01" value="0" oninput="renderQuoteTotals()"></div>
+</div>
+</div>
+<div class="card section">
+<h2>2. Adicionar trabalho</h2>
+<div class="field"><label for="categorySelect">Escolher categoria</label><select id="categorySelect" onchange="renderServiceChoices()"></select></div>
+<div class="field"><label for="serviceSelect">Escolher serviço</label><select id="serviceSelect" onchange="selectService()"></select></div>
+<div id="serviceInfo" class="notice hidden"></div>
+<div class="field"><label>Como quer indicar a quantidade?</label><div class="chips"><button class="chip selected" id="modeDirect" onclick="setMeasureMode('direct')">Já sei a quantidade</button><button class="chip" id="modeMeasure" onclick="setMeasureMode('measure')">Calcular por medidas</button></div></div>
+<div id="directFields">
+<div class="row"><div class="field"><label for="quantity">Quantidade</label><input id="quantity" type="number" min="0" step="0.01" value="1" oninput="updateLinePreview()"></div><div class="field"><label for="unitLabel">Unidade</label><input id="unitLabel" value="un" readonly></div></div>
+</div>
+<div id="measureFields" class="hidden">
+<div class="field"><label for="measureType">Tipo de cálculo</label><select id="measureType" onchange="renderMeasureFields()"><option value="area">Área — comprimento × largura</option><option value="wall">Parede — comprimento × altura</option><option value="volume">Volume — comprimento × largura × altura</option><option value="linear">Comprimento linear</option><option value="wallOpenings">Parede menos portas/janelas</option></select></div>
+<div class="row"><div class="field"><label for="dimA" id="dimALabel">Comprimento (m)</label><input id="dimA" type="number" min="0" step="0.01" value="1" oninput="updateLinePreview()"></div><div class="field" id="dimBWrap"><label for="dimB" id="dimBLabel">Largura (m)</label><input id="dimB" type="number" min="0" step="0.01" value="1" oninput="updateLinePreview()"></div></div>
+<div class="field hidden" id="dimCWrap"><label for="dimC" id="dimCLabel">Altura/profundidade (m)</label><input id="dimC" type="number" min="0" step="0.01" value="1" oninput="updateLinePreview()"></div>
+<div class="row hidden" id="openingsWrap"><div class="field"><label for="doors">Área de portas (m²)</label><input id="doors" type="number" min="0" step="0.01" value="0" oninput="updateLinePreview()"></div><div class="field"><label for="windows">Área de janelas (m²)</label><input id="windows" type="number" min="0" step="0.01" value="0" oninput="updateLinePreview()"></div></div>
+<div class="notice" id="measureResult">Quantidade calculada: 1,00</div>
+</div>
+<div class="row">
+<div class="field"><label for="priceMode">Tipo de preço</label><select id="priceMode" onchange="renderPriceFields()"><option value="direct">Preço de venda por unidade</option><option value="cost">Custo + margem</option></select></div>
+<div class="field"><label for="lineUnitPrice">Preço de venda/un. (€)</label><input id="lineUnitPrice" type="number" min="0" step="0.01" value="0" oninput="updateLinePreview()"></div>
+</div>
+<div id="costFields" class="hidden">
+<div class="row">
+<div class="field"><label for="materialsCost">Materiais por unidade (€)</label><input id="materialsCost" type="number" min="0" step="0.01" value="0" oninput="updateLinePreview()"></div>
+<div class="field"><label for="otherCost">Outros custos/un. (€)</label><input id="otherCost" type="number" min="0" step="0.01" value="0" oninput="updateLinePreview()"></div>
+</div>
+<div class="row">
+<div class="field"><label for="labourHours">Horas de mão de obra/un.</label><input id="labourHours" type="number" min="0" step="0.1" value="0" oninput="updateLinePreview()"></div>
+<div class="field"><label for="lineMargin">Margem sobre custo (%)</label><input id="lineMargin" type="number" min="0" step="0.1" value="20" oninput="updateLinePreview()"></div>
+</div>
+<div class="help">Cálculo: materiais + outros custos + horas × custo horário da equipa; depois aplica-se a margem sobre o custo.</div>
+</div>
+<div class="field"><label for="lineDescription">Descrição (opcional)</label><input id="lineDescription" placeholder="Ex.: bloco de 15, acabamento incluído"></div>
+<div class="notice" id="linePreview">Total desta linha: 0,00 €</div>
+<button class="full gold section" onclick="addLine()">＋ Adicionar este trabalho</button>
+</div>
+<div class="section">
+<h2>3. Trabalhos no orçamento</h2><div id="quoteLines" class="list"></div>
+</div>
+<div class="card section">
+<h2>4. Resumo e notas</h2>
+<div class="row"><div class="field"><label for="vatRate">IVA (%)</label><input id="vatRate" type="number" min="0" max="100" step="0.1" value="0" oninput="renderQuoteTotals()"></div><div class="field"><label for="vatMode">IVA no orçamento</label><select id="vatMode" onchange="renderQuoteTotals()"><option value="add">Acrescentar IVA</option><option value="included">Preços já incluem IVA</option><option value="none">Não aplicar IVA</option></select></div></div>
+<div class="field"><label for="quoteNotes">Condições e notas</label><textarea id="quoteNotes" placeholder="Ex.: prazo previsto, materiais incluídos, forma de pagamento..."></textarea></div>
+<div id="quoteTotals"></div>
+<div class="toolbar"><button onclick="saveQuote()">💾 Guardar orçamento</button><button class="secondary" onclick="previewPrint()">🖨️ Imprimir / guardar PDF</button><button class="secondary" onclick="shareQuote()">📲 Partilhar</button></div>
+<button class="danger full" onclick="cancelEditor()">Cancelar orçamento</button>
+</div>
+</section>
+
+<section id="quotes" class="page">
+<h1>Orçamentos guardados</h1><p class="muted">Abra um orçamento para o consultar, alterar ou imprimir.</p>
+<div class="field"><label for="quoteSearch">Pesquisar por cliente ou número</label><input id="quoteSearch" placeholder="Escreva para pesquisar..." oninput="renderSavedQuotes()"></div>
+<div id="savedQuotes" class="list"></div>
+</section>
+
+<section id="catalog" class="page">
+<h1>Serviços e preços</h1><p class="muted">Os valores abaixo são exemplos editáveis, não são preços de mercado. Altere-os para os preços usados pelo seu negócio.</p>
+<div class="toolbar"><button onclick="openAddService()">＋ Criar serviço</button><button class="secondary" onclick="resetCatalog()">Repor exemplos</button></div>
+<div class="field"><label for="catalogCategory">Filtrar categoria</label><select id="catalogCategory" onchange="renderCatalog()"></select></div>
+<div id="catalogList" class="list"></div>
+</section>
+
+<section id="settings" class="page">
+<h1>Dados e segurança</h1><p class="muted">Configure os dados que aparecem nos orçamentos e guarde cópias dos seus dados.</p>
+<div class="card section"><h2>Dados da empresa</h2>
+<div class="field"><label for="companyName">Nome / empresa</label><input id="companyName" placeholder="Nome a apresentar no orçamento"></div>
+<div class="row"><div class="field"><label for="companyPhone">Telefone</label><input id="companyPhone" placeholder="Telefone"></div><div class="field"><label for="companyEmail">Email</label><input id="companyEmail" placeholder="Email (opcional)"></div></div>
+<div class="field"><label for="companyAddress">Morada</label><input id="companyAddress" placeholder="Morada (opcional)"></div>
+<div class="row"><div class="field"><label for="companyNif">NIF</label><input id="companyNif" placeholder="NIF (opcional)"></div><div class="field"><label for="defaultVat">IVA predefinido (%)</label><input id="defaultVat" type="number" min="0" max="100" step="0.1" value="0"></div></div>
+</div>
+<div class="card section"><h2>Mão de obra</h2>
+<div class="row"><div class="field"><label for="hourlyRate">Custo por hora por trabalhador (€)</label><input id="hourlyRate" type="number" min="0" step="0.01" value="12"></div><div class="field"><label for="defaultWorkers">Trabalhadores habituais</label><input id="defaultWorkers" type="number" min="1" max="30" step="1" value="1"></div></div>
+<div class="row"><div class="field"><label for="helperEnabled">Tem ajudante?</label><select id="helperEnabled"><option value="no">Não</option><option value="yes">Sim</option></select></div><div class="field"><label for="helperHourly">Custo/hora do ajudante (€)</label><input id="helperHourly" type="number" min="0" step="0.01" value="8"></div></div>
+<div class="help">O custo horário da equipa é usado quando escolhe “Custo + margem”. Pode alterar os valores a qualquer momento; os orçamentos já guardados mantêm os preços registados na altura.</div>
+<button class="full" onclick="saveSettings()">Guardar configurações</button>
+</div>
+<div class="card section"><h2>Cópia de segurança</h2><p class="muted">Exporte um ficheiro JSON e guarde-o no Google Drive, email ou noutro local seguro. Para recuperar dados, importe esse ficheiro nesta aplicação.</p>
+<div class="toolbar"><button onclick="exportBackup()">⬇️ Exportar cópia</button><button class="secondary" onclick="document.getElementById('backupFile').click()">⬆️ Importar cópia</button><input id="backupFile" type="file" accept=".json,application/json" class="hidden" onchange="importBackup(event)"></div>
+<div class="notice">A aplicação guarda os dados no armazenamento do navegador deste dispositivo. Se apagar os dados do site, poderá perder os orçamentos. Faça cópias de segurança regularmente.</div>
+</div>
+<div class="card section"><h2>Instalar no telemóvel</h2><p class="muted">Depois de publicar a aplicação no GitHub Pages, abra o endereço no Chrome do Samsung, toque no menu ⋮ e escolha “Instalar aplicação” ou “Adicionar ao ecrã principal”.</p></div>
+</section>
+<section id="printArea" class="page"></section>
+</main>
+<nav class="bottomnav no-print"><div class="navinner">
+<button class="navbtn active" data-page="home" onclick="go('home')"><span class="ni">⌂</span>Início</button>
+<button class="navbtn" data-page="quotes" onclick="go('quotes')"><span class="ni">▤</span>Orçamentos</button>
+<button class="navbtn" data-page="catalog" onclick="go('catalog')"><span class="ni">▦</span>Serviços</button>
+<button class="navbtn" data-page="settings" onclick="go('settings')"><span class="ni">⚙</span>Definições</button>
+</div></nav>
+<script src="app.js"></script>
+</body>
+</html>
