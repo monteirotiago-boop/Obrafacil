@@ -100,7 +100,19 @@ button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.
 <button class="full gold section" onclick="addLine()">＋ Adicionar este trabalho</button>
 </div>
 <div class="card section">
-<h2>3. Calculadoras rápidas</h2>
+<h2>2. Serviço completo</h2>
+<p class="muted">Escolha um serviço e assinale os trabalhos incluídos. O orçamento fica com uma linha principal e a descrição do que está incluído.</p>
+<div class="field"><label for="packageType">Tipo de serviço</label><select id="packageType" onchange="renderPackage()"><option value="wall">Construir parede de blocos</option><option value="brick">Construir parede de tijolo</option><option value="paint">Pintar parede ou teto</option><option value="tile">Assentar cerâmica</option><option value="plasterboard">Montar pladur</option><option value="waterproof">Impermeabilizar</option></select></div>
+<div class="row"><div class="field"><label for="packageA" id="packageALabel">Comprimento (m)</label><input id="packageA" type="number" min="0" step="0.01" value="5" oninput="updatePackage()"></div><div class="field"><label for="packageB" id="packageBLabel">Altura (m)</label><input id="packageB" type="number" min="0" step="0.01" value="2" oninput="updatePackage()"></div></div>
+<div class="row" id="packageOpenings"><div class="field"><label for="packageDoors">Portas / vãos (m²)</label><input id="packageDoors" type="number" min="0" step="0.01" value="0" oninput="updatePackage()"></div><div class="field"><label for="packageWindows">Janelas (m²)</label><input id="packageWindows" type="number" min="0" step="0.01" value="0" oninput="updatePackage()"></div></div>
+<div class="field"><label for="packageFaces">Faces a tratar</label><select id="packageFaces" onchange="updatePackage()"><option value="1">Uma face</option><option value="2">Duas faces</option></select></div>
+<div id="packageOptions" class="section"></div>
+<div class="notice" id="packageMeasure">Área calculada: 10 m²</div>
+<div class="totalbox" id="packagePreview"><div>Preço estimado do serviço completo</div><div class="big">—</div></div>
+<button class="full gold" onclick="addPackage()">＋ Adicionar serviço completo ao orçamento</button>
+</div>
+<div class="card section">
+<h2>3. Outros serviços</h2>
 <p class="muted">Calcule áreas e volumes sem fazer contas à mão. Escolha o serviço e adicione-o ao orçamento.</p>
 <div class="field"><label for="quickType">Tipo de trabalho</label><select id="quickType" onchange="renderQuickCalc()"><option value="paint">Pintura de paredes/tetos</option><option value="floor">Pavimento / cerâmica</option><option value="concrete">Betão / escavação (volume)</option><option value="plasterboard">Pladur</option><option value="roof">Telhado / impermeabilização</option><option value="linear">Trabalho por metro linear</option></select></div>
 <div class="row"><div class="field"><label for="quickA" id="quickALabel">Comprimento (m)</label><input id="quickA" type="number" min="0" step="0.01" value="5" oninput="updateQuickCalc()"></div><div class="field" id="quickBWrap"><label for="quickB" id="quickBLabel">Altura (m)</label><input id="quickB" type="number" min="0" step="0.01" value="2.5" oninput="updateQuickCalc()"></div></div>

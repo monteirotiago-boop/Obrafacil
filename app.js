@@ -157,5 +157,47 @@ function updateQuickCalc(){if(!document.getElementById('quickType'))return;const
 function addQuickLine(){if(!currentQuote){alert('Abra primeiro um orçamento.');return}const d=quickCalcData();if(!d.s||d.q<=0){alert('Indique medidas válidas e escolha um serviço.');return}currentQuote.lines.push({id:uid(),serviceId:d.s.id,category:d.s.category,name:d.s.name,description:'Calculadora rápida — confirmar materiais e âmbito',unit:d.s.unit,quantity:d.q,unitPrice:d.s.price,total:d.q*d.s.price,priceMode:'direct',calculation:`Calculadora ${d.type}`,referencePrice:!!d.s.reference});renderLines();document.getElementById('quoteLines').scrollIntoView({behavior:'smooth',block:'start'})}
 function duplicateQuote(id){const original=db.quotes.find(q=>q.id===id);if(!original)return;const copy=JSON.parse(JSON.stringify(original));copy.id=uid();copy.number='ORC-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-5);copy.date=new Date().toISOString().slice(0,10);copy.createdAt=new Date().toISOString();copy.updatedAt=copy.createdAt;copy.client='';copy.clientPhone='';copy.clientNif='';copy.clientEmail='';populateEditor(copy)}
 
-loadDB();applyReferencePricesToEmptyCatalog();fillCategories();loadSettings();renderStats();renderSavedQuotes();renderQuickCalc();
+
+// Serviço completo: etapas relacionadas são calculadas em conjunto e apresentadas como uma linha no orçamento.
+const packageConfig={
+ wall:{label:'Construir parede de blocos',unit:'m²',base:18,options:[['rebocoA','Reboco numa face',22.5],['rebocoB','Reboco na outra face',22.5],['paintA','Preparação/lixagem normal + primário + pintura numa face',17.5],['paintB','Preparação/lixagem normal + primário + pintura na outra face',17.5],['insulation','Isolamento térmico/acústico',28],['demolition','Demolição e remoção da parede existente',18]]},
+ brick:{label:'Construir parede de tijolo',unit:'m²',base:52.5,options:[['rebocoA','Reboco numa face',22.5],['rebocoB','Reboco na outra face',22.5],['paintA','Preparação/lixagem normal + primário + pintura numa face',17.5],['paintB','Preparação/lixagem normal + primário + pintura na outra face',17.5],['insulation','Isolamento térmico/acústico',28],['demolition','Demolição e remoção da parede existente',18]]},
+ paint:{label:'Pintura de parede/teto',unit:'m²',base:12.5,options:[['sand','Preparação e lixagem normal',5],['primer','Primário',3],['coats2','Duas demãos de tinta',9.5],['repairs','Pequenas reparações/massas',5]]},
+ tile:{label:'Assentamento de cerâmica',unit:'m²',base:32,options:[['remove','Remover revestimento existente',15],['prepare','Preparação/regularização do suporte',10],['grout','Betumação e acabamento',5],['skirting','Rodapé (estimativa por m² equivalente)',0]]},
+ plasterboard:{label:'Montagem de pladur',unit:'m²',base:30,options:[['tape','Tratamento de juntas',6],['sand','Lixagem e preparação',4],['paint','Primário e pintura',12.5],['insulation','Isolamento na caixa',12]]},
+ waterproof:{label:'Impermeabilização',unit:'m²',base:50,options:[['prepare','Preparação do suporte',8],['primer','Primário compatível',5],['finish','Acabamento/proteção adicional',12]]}
+};
+function renderPackage(){
+ const type=val('packageType'),cfg=packageConfig[type];if(!cfg)return;
+ document.getElementById('packageALabel').textContent=type==='paint'?'Comprimento (m)':'Comprimento (m)';
+ document.getElementById('packageBLabel').textContent=type==='paint'||type==='wall'||type==='brick'||type==='plasterboard'?'Altura (m)':'Largura (m)';
+ document.getElementById('packageOpenings').classList.toggle('hidden',!['wall','brick','paint','plasterboard'].includes(type));
+ document.getElementById('packageFaces').classList.toggle('hidden',!['wall','brick','paint'].includes(type));
+ document.getElementById('packageOptions').innerHTML='<strong>Incluir no mesmo serviço</strong>'+cfg.options.map((o,i)=>`<div class="field"><label><input type="checkbox" id="pkg_${o[0]}" ${['wall','brick'].includes(type)&&['rebocoA'].includes(o[0])?'checked':''} ${type==='paint'&&['sand','primer','coats2'].includes(o[0])?'checked':''} onchange="updatePackage()"> ${esc(o[1])} <span class="muted">(+${euro(o[2])}/${cfg.unit})</span></label></div>`).join('');
+ updatePackage();
+}
+function packageData(){
+ const type=val('packageType'),cfg=packageConfig[type],a=num('packageA'),b=num('packageB');
+ let area=a*b;
+ if(['wall','brick','paint','plasterboard'].includes(type))area=Math.max(0,area-num('packageDoors')-num('packageWindows'));
+ const faces=['wall','brick','paint'].includes(type)?Math.max(1,Number(val('packageFaces'))||1):1;
+ let unit=cfg.base;const included=[];
+ cfg.options.forEach(o=>{const el=document.getElementById('pkg_'+o[0]);if(el&&el.checked){let price=o[2];if(['rebocoA','rebocoB','paintA','paintB'].includes(o[0]))price=o[2];unit+=price;included.push(o[1])}});
+ // For two-face painting/reboco checkboxes are independent; area is multiplied per selected face by selecting each face option.
+ return {type,cfg,area,unit,total:area*unit,included};
+}
+function updatePackage(){
+ if(!document.getElementById('packageType'))return;
+ const d=packageData();document.getElementById('packageMeasure').textContent=`Área líquida calculada: ${d.area.toLocaleString('pt-PT',{maximumFractionDigits:2})} m²`;
+ document.getElementById('packagePreview').innerHTML=`<div>Preço estimado do serviço completo</div><div class="big">${euro(d.total)}</div><div class="totalrow"><span>Preço por m² (base + opções)</span><strong>${euro(d.unit)}</strong></div><div class="help" style="color:#e0e9e3">Inclui: ${d.included.length?d.included.join(', '):'apenas o trabalho base'}. Preços indicativos e editáveis; confirmar materiais e âmbito.</div>`;
+}
+function addPackage(){
+ if(!currentQuote){alert('Abra primeiro um orçamento.');return}
+ const d=packageData();if(d.area<=0){alert('Indique medidas válidas.');return}
+ const description=['Inclui: '+(d.included.length?d.included.join(', '):'trabalho base'),'Área calculada: '+d.area+' m²','Preço indicativo; confirmar materiais, preparação e IVA'].join('. ');
+ currentQuote.lines.push({id:uid(),serviceId:null,category:'Serviço completo',name:d.cfg.label,description,unit:'m²',quantity:d.area,unitPrice:d.unit,total:d.total,priceMode:'direct',calculation:'Serviço composto: '+d.included.join(', '),packageParts:d.included.slice(),referencePrice:true});
+ renderLines();document.getElementById('quoteLines').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+loadDB();applyReferencePricesToEmptyCatalog();fillCategories();loadSettings();renderStats();renderSavedQuotes();renderQuickCalc();renderPackage();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
