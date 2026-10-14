@@ -1,45 +1,30 @@
-# ObraFácil V3 — Orçamentos de construção civil
+# ObraFácil — nova versão
 
-Aplicação web móvel, em português de Portugal, para uso inicial num único dispositivo.
+Aplicação web progressiva (PWA), em português de Portugal, para preparar orçamentos de construção civil num telemóvel ou computador.
 
-## Novidades V3
-- Interface com categorias e fluxos de trabalho separados.
-- Catálogo de serviços editável com preços-base indicativos.
-- Construtor de parede/muro: área líquida, desconto de portas/janelas e seleção separada de assentamento, reboco em cada face e pintura em cada face.
-- Calculadoras rápidas de pintura, pavimento, betão/escavação, pladur, telhado/impermeabilização e metros lineares.
-- Orçamentos com dados do cliente, NIF/email opcionais, nome da obra, morada, data, validade, desconto, IVA e notas.
-- Cálculo de preço direto ou custo + margem, com materiais, mão de obra, ajudante e outros custos.
-- Orçamentos guardados com opções para abrir/editar, imprimir/guardar PDF, partilhar resumo, duplicar e apagar.
+## Funcionalidades
+- Painel inicial e histórico de orçamentos.
+- Dados do cliente e da obra, validade, desconto, IVA, notas e estado do orçamento.
+- Serviços completos configuráveis (parede de blocos/tijolo, pintura, cerâmica, pladur, impermeabilização e telhado) com cálculo de área, desconto de vãos e etapas opcionais num único item.
+- Catálogo de serviços por categoria, com preços de referência editáveis.
+- Quantidades diretas e calculadoras de área, parede, volume e metro linear.
+- Preço direto ou custo + margem, incluindo materiais, outros custos, horas, número de trabalhadores e ajudante.
+- Orçamentos guardados localmente, edição, duplicação, estado, pesquisa e remoção.
+- Documento de impressão que pode ser guardado em PDF pelo navegador.
+- Partilha do resumo através da folha de partilha do dispositivo; o PDF é anexado manualmente depois de o guardar.
 - Exportação/importação de cópia de segurança JSON.
-- PWA básica e cache offline.
+- Manifesto PWA e service worker para instalação após publicação em HTTPS.
 
-## Fórmulas principais
-- Área = comprimento × largura ou comprimento × altura.
-- Volume = comprimento × largura × profundidade.
-- Parede líquida = comprimento × altura − área de portas − área de janelas, nunca abaixo de zero.
-- Custo unitário = materiais + outros custos + (horas por unidade × custo horário da equipa).
-- Preço por custo + margem = custo unitário × (1 + margem/100).
-- Subtotal = soma de quantidade × preço unitário.
-- Desconto limitado ao subtotal.
-- IVA acrescentado = (subtotal − desconto) × taxa configurada.
-- Quando os preços já incluem IVA, o IVA é discriminado sem aumentar o total.
-
-A margem é uma percentagem sobre o custo (markup), não a margem bruta percentual sobre o preço final.
-
-## Preços
-Os preços do catálogo são referências de arranque, não uma tabela oficial de preços nem uma garantia de preço local. Variam com região, quantidades, acessos, estado do suporte, altura, preparação, materiais incluídos, resíduos, andaimes, equipamento e IVA. Algumas referências públicas agrupam materiais e mão de obra ou incluem várias etapas; não compare esses valores sem confirmar o âmbito. O assentamento de bloco tem um valor-base de trabalho editável, pois não foi encontrada uma tarifa pública nacional homogénea para mão de obra isolada. Confirme todos os preços com o responsável pela obra antes de enviar propostas.
+## Publicar no GitHub Pages
+1. Descarregue e extraia o ZIP.
+2. Envie os ficheiros da pasta para a raiz do repositório GitHub: `index.html`, `app.js`, `manifest.webmanifest`, `sw.js`, `icon.svg` e `README.md`.
+3. Em Settings → Pages, escolha a branch `main` e a pasta `/(root)` e guarde.
+4. Abra o URL Pages no Chrome e teste criar, guardar, reabrir, imprimir e exportar uma cópia.
 
 ## Dados e segurança
-Os dados ficam no `localStorage` do navegador. Não existe sincronização na nuvem nem conta de utilizador. Limpar os dados do site pode apagar orçamentos; exporte cópias regularmente. A importação substitui os dados atuais. Não publique dados de clientes no repositório GitHub.
+Os dados são guardados no armazenamento local do navegador e não são sincronizados entre dispositivos. Exportar uma cópia regularmente é essencial. A importação substitui os dados atuais e pede confirmação.
 
-## Publicação no GitHub Pages
-1. No repositório, substitua os ficheiros pelos desta versão: `index.html`, `app.js`, `manifest.webmanifest`, `sw.js`, `icon.svg` e `README.md`.
-2. Mantenha GitHub Pages configurado para branch `main`, pasta `/(root)`.
-3. Aguarde pela publicação e abra o URL do Pages.
-4. No Samsung, abra no Chrome e use o menu ⋮ → “Instalar aplicação” ou “Adicionar ao ecrã principal”.
-
-## PDF e WhatsApp
-O botão de impressão abre a impressão do navegador; no Android, escolha “Guardar como PDF”. O botão de partilha envia o resumo através do menu de partilha. Para enviar o documento completo pelo WhatsApp, guarde o PDF e anexe-o à conversa.
-
-## Verificações antes de uso real
-Teste pelo menos um orçamento de parede, um orçamento de pintura e um orçamento com IVA; confirme preços, quantidades, materiais incluídos e regras fiscais antes de apresentar propostas a clientes.
+## Notas importantes
+- Os preços iniciais são exemplos indicativos editáveis, não uma tabela oficial nem garantia de preço de mercado. Confirme se incluem materiais, mão de obra, transporte, desperdício e IVA.
+- A taxa de IVA é configurável; confirme a taxa e o enquadramento fiscal aplicáveis a cada obra antes de entregar o orçamento.
+- A aplicação foi verificada quanto à sintaxe JavaScript; é necessário testar as interações no navegador real e no GitHub Pages antes de utilização profissional.

@@ -1,18 +1,1 @@
-{
-  "name": "ObraFácil V3 — Orçamentos de Construção",
-  "short_name": "ObraFácil V3",
-  "description": "Aplicação intuitiva para orçamentos de construção civil.",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#f4f6f3",
-  "theme_color": "#173b32",
-  "lang": "pt-PT",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
-}
+{"name":"ObraFácil — Orçamentos de Construção","short_name":"ObraFácil","description":"Orçamentos de construção civil simples e profissionais.","lang":"pt-PT","start_url":"./","scope":"./","display":"standalone","background_color":"#f4f5f1","theme_color":"#14251f","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
