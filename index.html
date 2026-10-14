@@ -7,7 +7,7 @@
 <meta name="description" content="Aplicação simples para criar e guardar orçamentos de construção civil.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<title>ObraFácil — Orçamentos</title>
+<title>ObraFácil V3 — Orçamentos</title>
 <style>
 :root{--green:#173b32;--green2:#245b4c;--gold:#e2b75b;--bg:#f4f6f3;--card:#fff;--ink:#1c2925;--muted:#65736d;--line:#dfe6e1;--red:#a83232;--radius:18px}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:16px}
@@ -30,7 +30,7 @@ button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.
 </style>
 </head>
 <body>
-<header><div class="head"><div class="logo">O</div><div><div class="brand">ObraFácil</div><div class="tag">Orçamentos de construção civil</div></div></div></header>
+<header><div class="head"><div class="logo">O</div><div><div class="brand">ObraFácil <span style="font-size:12px;color:#e2b75b">V3</span></div><div class="tag">Orçamentos de construção civil</div></div></div></header>
 <main>
 <section id="home" class="page active">
 <h1>Bom dia!</h1><p class="muted">Faça um orçamento de forma simples e rápida.</p>
@@ -51,7 +51,9 @@ button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.
 <h1 id="editorTitle">Novo orçamento</h1><p class="muted">Preencha os dados e adicione os trabalhos necessários.</p>
 <div class="card section">
 <h2>1. Dados do cliente</h2>
-<div class="field"><label for="client">Nome do cliente</label><input id="client" placeholder="Ex.: João Silva"></div>
+<div class="field"><label for="client">Nome do cliente *</label><input id="client" placeholder="Ex.: João Silva"></div>
+<div class="row"><div class="field"><label for="clientNif">NIF do cliente (opcional)</label><input id="clientNif" inputmode="numeric" placeholder="NIF"></div><div class="field"><label for="clientEmail">Email (opcional)</label><input id="clientEmail" inputmode="email" placeholder="cliente@email.pt"></div></div>
+<div class="field"><label for="jobTitle">Nome da obra (opcional)</label><input id="jobTitle" placeholder="Ex.: Remodelação da cozinha"></div>
 <div class="row">
 <div class="field"><label for="clientPhone">Telefone</label><input id="clientPhone" inputmode="tel" placeholder="Opcional"></div>
 <div class="field"><label for="quoteDate">Data</label><input id="quoteDate" type="date"></div>
@@ -97,11 +99,22 @@ button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.
 <div class="notice" id="linePreview">Total desta linha: 0,00 €</div>
 <button class="full gold section" onclick="addLine()">＋ Adicionar este trabalho</button>
 </div>
+<div class="card section">
+<h2>3. Calculadoras rápidas</h2>
+<p class="muted">Calcule áreas e volumes sem fazer contas à mão. Escolha o serviço e adicione-o ao orçamento.</p>
+<div class="field"><label for="quickType">Tipo de trabalho</label><select id="quickType" onchange="renderQuickCalc()"><option value="paint">Pintura de paredes/tetos</option><option value="floor">Pavimento / cerâmica</option><option value="concrete">Betão / escavação (volume)</option><option value="plasterboard">Pladur</option><option value="roof">Telhado / impermeabilização</option><option value="linear">Trabalho por metro linear</option></select></div>
+<div class="row"><div class="field"><label for="quickA" id="quickALabel">Comprimento (m)</label><input id="quickA" type="number" min="0" step="0.01" value="5" oninput="updateQuickCalc()"></div><div class="field" id="quickBWrap"><label for="quickB" id="quickBLabel">Altura (m)</label><input id="quickB" type="number" min="0" step="0.01" value="2.5" oninput="updateQuickCalc()"></div></div>
+<div class="field hidden" id="quickDepthWrap"><label for="quickDepth">Altura/profundidade (m)</label><input id="quickDepth" type="number" min="0" step="0.01" value="1" oninput="updateQuickCalc()"></div>
+<div class="row hidden" id="quickOpenings"><div class="field"><label for="quickDoors">Portas (m²)</label><input id="quickDoors" type="number" min="0" step="0.01" value="0" oninput="updateQuickCalc()"></div><div class="field"><label for="quickWindows">Janelas (m²)</label><input id="quickWindows" type="number" min="0" step="0.01" value="0" oninput="updateQuickCalc()"></div></div>
+<div class="field"><label for="quickService">Serviço/preço base</label><select id="quickService" onchange="updateQuickCalc()"></select></div>
+<div class="field"><label for="quickWaste">Desperdício adicional (%)</label><input id="quickWaste" type="number" min="0" max="100" step="0.5" value="0" oninput="updateQuickCalc()"><div class="help">Use apenas quando fizer sentido e confirme com o fornecedor/empreiteiro.</div></div>
+<div class="notice" id="quickResult">Quantidade: —</div><button class="full gold" onclick="addQuickLine()">＋ Adicionar ao orçamento</button>
+</div>
 <div class="section">
-<h2>3. Trabalhos no orçamento</h2><div id="quoteLines" class="list"></div>
+<h2>4. Trabalhos no orçamento</h2><div id="quoteLines" class="list"></div>
 </div>
 <div class="card section">
-<h2>4. Resumo e notas</h2>
+<h2>5. Resumo e notas</h2>
 <div class="row"><div class="field"><label for="vatRate">IVA (%)</label><input id="vatRate" type="number" min="0" max="100" step="0.1" value="0" oninput="renderQuoteTotals()"></div><div class="field"><label for="vatMode">IVA no orçamento</label><select id="vatMode" onchange="renderQuoteTotals()"><option value="add">Acrescentar IVA</option><option value="included">Preços já incluem IVA</option><option value="none">Não aplicar IVA</option></select></div></div>
 <div class="field"><label for="quoteNotes">Condições e notas</label><textarea id="quoteNotes" placeholder="Ex.: prazo previsto, materiais incluídos, forma de pagamento..."></textarea></div>
 <div id="quoteTotals"></div>
@@ -129,6 +142,7 @@ button.secondary,.button.secondary{background:#e9efeb;color:var(--green)}button.
 <div class="field"><label for="companyName">Nome / empresa</label><input id="companyName" placeholder="Nome a apresentar no orçamento"></div>
 <div class="row"><div class="field"><label for="companyPhone">Telefone</label><input id="companyPhone" placeholder="Telefone"></div><div class="field"><label for="companyEmail">Email</label><input id="companyEmail" placeholder="Email (opcional)"></div></div>
 <div class="field"><label for="companyAddress">Morada</label><input id="companyAddress" placeholder="Morada (opcional)"></div>
+<div class="field"><label for="companyLogoText">Nome comercial no cabeçalho (opcional)</label><input id="companyLogoText" placeholder="Nome curto"></div>
 <div class="row"><div class="field"><label for="companyNif">NIF</label><input id="companyNif" placeholder="NIF (opcional)"></div><div class="field"><label for="defaultVat">IVA predefinido (%)</label><input id="defaultVat" type="number" min="0" max="100" step="0.1" value="0"></div></div>
 </div>
 <div class="card section"><h2>Mão de obra</h2>

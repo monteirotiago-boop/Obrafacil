@@ -14,8 +14,30 @@ const categories=[
 { name:'Carpintaria e acabamentos', services:[['Montagem de porta','un',0,0,0],['Montagem de rodapé','ml',0,0,0],['Montagem de móveis','un',0,0,0]]},
 { name:'Exterior e deslocações', services:[['Limpeza de terreno','m²',0,0,0],['Pavimento exterior','m²',0,0,0],['Deslocação','serviço',0,0,0],['Aluguer de equipamento','dia',0,0,0]]}
 ];
-const exampleCatalog=()=>categories.flatMap(c=>c.services.map(s=>({id:uid(),category:c.name,name:s[0],unit:s[1],price:0,materials:0,other:0,hours:0,margin:20,mode:'direct'})));
-let db={quotes:[],catalog:exampleCatalog(),settings:{companyName:'',companyPhone:'',companyEmail:'',companyAddress:'',companyNif:'',defaultVat:0,hourlyRate:12,defaultWorkers:1,helperEnabled:'no',helperHourly:8}};
+// Valores-base indicativos para Portugal (2026), editáveis. Não são uma tabela oficial.
+const referencePrices = {
+'Assentamento de bloco':18,'Assentamento de tijolo':52.5,'Execução de muro':20,'Pilares de alvenaria':75,'Demolição de parede':18,
+'Betão armado':220,'Betonilha':18,'Cofragem':28,'Armadura de ferro':2.2,
+'Reboco interior':22.5,'Reboco exterior':22.5,'Estuque / barramento':12,
+'Assentamento de cerâmica':32,'Aplicação de pavimento flutuante':18,'Rodapé':8,'Betonilha de regularização':16,
+'Pintura interior':12.5,'Pintura exterior':20,'Preparação e lixagem':5,'Pintura de portas':55,
+'Parede em pladur':30,'Teto falso em pladur':32,'Isolamento térmico':28,
+'Reparação de telhado':45,'Impermeabilização':25,'Aplicação de telha':35,'Limpeza de caleiras':8,
+'Instalação de tubagem':18,'Montagem de sanita':100,'Montagem de torneira':45,'Ponto de água':95,
+'Ponto de luz':65,'Tomada elétrica':45,'Passagem de cabos':8,'Montagem de quadro':250,
+'Demolição de pavimento':15,'Escavação':35,'Remoção de entulho':90,
+'Montagem de porta':120,'Montagem de rodapé':8,'Montagem de móveis':45,
+'Limpeza de terreno':4,'Pavimento exterior':35,'Deslocação':35,'Aluguer de equipamento':80
+};
+const exampleCatalog=()=>categories.flatMap(c=>c.services.map(s=>({id:uid(),category:c.name,name:s[0],unit:s[1],price:referencePrices[s[0]]??25,materials:0,other:0,hours:0,margin:20,mode:'direct',reference:true})));
+function applyReferencePricesToEmptyCatalog(){
+  // Atualiza apenas preços a zero nos catálogos existentes; nunca substitui preços que o utilizador já alterou.
+  const defaults=referencePrices;
+  let changed=false;
+  db.catalog.forEach(s=>{if((Number(s.price)||0)===0 && defaults[s.name]!==undefined){s.price=defaults[s.name];s.reference=true;changed=true}});
+  if(changed)saveDB();
+}
+let db={quotes:[],catalog:exampleCatalog(),settings:{companyName:'',companyPhone:'',companyEmail:'',companyAddress:'',companyNif:'',companyLogoText:'',defaultVat:0,hourlyRate:18,defaultWorkers:1,helperEnabled:'no',helperHourly:12}};
 let currentQuote=null,measureMode='direct',lastPreview=null;
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4)}
 function euro(n){return (Number(n)||0).toLocaleString('pt-PT',{style:'currency',currency:'EUR'})}
@@ -44,15 +66,15 @@ function renderQuoteTotals(){if(!currentQuote)return;currentQuote.discount=num('
 function renderLines(){const el=document.getElementById('quoteLines');if(!currentQuote.lines.length){el.innerHTML='<div class="card empty"><div class="emoji">🧱</div><strong>Ainda não adicionou trabalhos</strong><p>Escolha um serviço acima e adicione-o ao orçamento.</p></div>'}else el.innerHTML=currentQuote.lines.map((l,i)=>`<div class="item"><div class="item-top"><div><div class="item-title">${esc(l.name)}</div><div class="item-sub">${esc(l.category)} · ${l.quantity.toLocaleString('pt-PT',{maximumFractionDigits:2})} ${esc(l.unit)} × ${euro(l.unitPrice)}</div>${l.description?`<div class="item-sub">${esc(l.description)}</div>`:''}<div class="item-sub">${esc(l.calculation||'')}</div></div><div class="price">${euro(l.total)}</div></div><div class="line-actions"><button class="small secondary" onclick="editLine('${l.id}')">Editar quantidade/preço</button><button class="small danger" onclick="removeLine('${l.id}')">Remover</button></div></div>`).join('');renderQuoteTotals()}
 function removeLine(id){currentQuote.lines=currentQuote.lines.filter(l=>l.id!==id);renderLines()}
 function editLine(id){const l=currentQuote.lines.find(x=>x.id===id);if(!l)return;const q=prompt(`Quantidade (${l.unit}):`,l.quantity);if(q===null)return;const quantity=Number(q);if(!Number.isFinite(quantity)||quantity<0){alert('Quantidade inválida.');return}const p=prompt('Preço de venda por unidade (€):',l.unitPrice);if(p===null)return;const price=Number(p);if(!Number.isFinite(price)||price<0){alert('Preço inválido.');return}l.quantity=quantity;l.unitPrice=price;l.total=quantity*price;renderLines()}
-function newQuote(){currentQuote={id:uid(),number:'ORC-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-5),client:'',clientPhone:'',date:new Date().toISOString().slice(0,10),jobAddress:'',validity:15,discount:0,vatRate:Number(db.settings.defaultVat)||0,vatMode:'add',notes:'',lines:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};fillCategories();setVal('client','');setVal('clientPhone','');setVal('quoteDate',currentQuote.date);setVal('jobAddress','');setVal('validity',15);setVal('discount',0);setVal('vatRate',currentQuote.vatRate);setVal('vatMode','add');setVal('quoteNotes','');setMeasureMode('direct');setVal('quantity',1);renderLines();document.getElementById('editorTitle').textContent='Novo orçamento';go('editor')}
-function populateEditor(q){currentQuote=JSON.parse(JSON.stringify(q));setVal('client',q.client);setVal('clientPhone',q.clientPhone);setVal('quoteDate',q.date);setVal('jobAddress',q.jobAddress);setVal('validity',q.validity);setVal('discount',q.discount);setVal('vatRate',q.vatRate);setVal('vatMode',q.vatMode);setVal('quoteNotes',q.notes);renderLines();document.getElementById('editorTitle').textContent='Editar '+q.number;go('editor')}
-function saveQuote(){if(!currentQuote)return;if(!val('client').trim()){alert('Indique o nome do cliente.');return}if(!currentQuote.lines.length){alert('Adicione pelo menos um trabalho antes de guardar.');return}Object.assign(currentQuote,{client:val('client').trim(),clientPhone:val('clientPhone'),date:val('quoteDate'),jobAddress:val('jobAddress'),validity:num('validity'),discount:num('discount'),vatRate:num('vatRate'),vatMode:val('vatMode'),notes:val('quoteNotes'),updatedAt:new Date().toISOString()});currentQuote.total=totals(currentQuote).total;const ix=db.quotes.findIndex(q=>q.id===currentQuote.id);if(ix>=0)db.quotes[ix]=JSON.parse(JSON.stringify(currentQuote));else db.quotes.unshift(JSON.parse(JSON.stringify(currentQuote)));saveDB();renderStats();alert('Orçamento guardado neste dispositivo.');go('quotes')}
+function newQuote(){currentQuote={id:uid(),number:'ORC-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-5),client:'',clientPhone:'',clientNif:'',clientEmail:'',jobTitle:'',date:new Date().toISOString().slice(0,10),jobAddress:'',validity:15,discount:0,vatRate:Number(db.settings.defaultVat)||0,vatMode:'add',notes:'',lines:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};fillCategories();setVal('client','');setVal('clientPhone','');setVal('clientNif','');setVal('clientEmail','');setVal('jobTitle','');setVal('quoteDate',currentQuote.date);setVal('jobAddress','');setVal('validity',15);setVal('discount',0);setVal('vatRate',currentQuote.vatRate);setVal('vatMode','add');setVal('quoteNotes','');setMeasureMode('direct');setVal('quantity',1);renderLines();document.getElementById('editorTitle').textContent='Novo orçamento';go('editor');updateWallPackage()}
+function populateEditor(q){currentQuote=JSON.parse(JSON.stringify(q));setVal('client',q.client);setVal('clientPhone',q.clientPhone);setVal('clientNif',q.clientNif);setVal('clientEmail',q.clientEmail);setVal('jobTitle',q.jobTitle);setVal('quoteDate',q.date);setVal('jobAddress',q.jobAddress);setVal('validity',q.validity);setVal('discount',q.discount);setVal('vatRate',q.vatRate);setVal('vatMode',q.vatMode);setVal('quoteNotes',q.notes);renderLines();document.getElementById('editorTitle').textContent='Editar '+q.number;go('editor');updateWallPackage()}
+function saveQuote(){if(!currentQuote)return;if(!val('client').trim()){alert('Indique o nome do cliente.');return}if(!currentQuote.lines.length){alert('Adicione pelo menos um trabalho antes de guardar.');return}Object.assign(currentQuote,{client:val('client').trim(),clientPhone:val('clientPhone'),clientNif:val('clientNif'),clientEmail:val('clientEmail'),jobTitle:val('jobTitle'),date:val('quoteDate'),jobAddress:val('jobAddress'),validity:num('validity'),discount:num('discount'),vatRate:num('vatRate'),vatMode:val('vatMode'),notes:val('quoteNotes'),updatedAt:new Date().toISOString()});currentQuote.total=totals(currentQuote).total;const ix=db.quotes.findIndex(q=>q.id===currentQuote.id);if(ix>=0)db.quotes[ix]=JSON.parse(JSON.stringify(currentQuote));else db.quotes.unshift(JSON.parse(JSON.stringify(currentQuote)));saveDB();renderStats();alert('Orçamento guardado neste dispositivo.');go('quotes')}
 function cancelEditor(){if(confirm('Cancelar e sair deste orçamento? As alterações ainda não guardadas serão perdidas.')){currentQuote=null;go('home')}}
-function renderSavedQuotes(){const search=val('quoteSearch').toLowerCase();const arr=db.quotes.filter(q=>`${q.client} ${q.number}`.toLowerCase().includes(search));document.getElementById('savedQuotes').innerHTML=arr.length?arr.map(q=>`<div class="item"><div class="item-top"><div><div class="item-title">${esc(q.client)}</div><div class="item-sub">${esc(q.number)} · ${esc(q.date||'')}</div><div class="item-sub">${q.lines.length} trabalho(s)</div></div><div class="price">${euro(q.total??totals(q).total)}</div></div><div class="line-actions"><button class="small" onclick="populateEditor(db.quotes.find(x=>x.id==='${q.id}'))">Abrir / editar</button><button class="small secondary" onclick="printSaved('${q.id}')">PDF</button><button class="small secondary" onclick="shareSaved('${q.id}')">Partilhar</button><button class="small danger" onclick="deleteQuote('${q.id}')">Apagar</button></div></div>`).join(''):'<div class="card empty"><div class="emoji">📋</div><strong>Não há orçamentos guardados</strong><p>Quando guardar o primeiro orçamento, aparecerá aqui.</p></div>'}
+function renderSavedQuotes(){const search=val('quoteSearch').toLowerCase();const arr=db.quotes.filter(q=>`${q.client} ${q.number}`.toLowerCase().includes(search));document.getElementById('savedQuotes').innerHTML=arr.length?arr.map(q=>`<div class="item"><div class="item-top"><div><div class="item-title">${esc(q.client)}</div><div class="item-sub">${esc(q.number)} · ${esc(q.date||'')}</div><div class="item-sub">${q.lines.length} trabalho(s)</div></div><div class="price">${euro(q.total??totals(q).total)}</div></div><div class="line-actions"><button class="small" onclick="populateEditor(db.quotes.find(x=>x.id==='${q.id}'))">Abrir / editar</button><button class="small secondary" onclick="printSaved('${q.id}')">PDF</button><button class="small secondary" onclick="shareSaved('${q.id}')">Partilhar</button><button class="small secondary" onclick="duplicateQuote('${q.id}')">Duplicar</button><button class="small danger" onclick="deleteQuote('${q.id}')">Apagar</button></div></div>`).join(''):'<div class="card empty"><div class="emoji">📋</div><strong>Não há orçamentos guardados</strong><p>Quando guardar o primeiro orçamento, aparecerá aqui.</p></div>'}
 function deleteQuote(id){if(confirm('Apagar definitivamente este orçamento?')){db.quotes=db.quotes.filter(q=>q.id!==id);saveDB();renderSavedQuotes();renderStats()}}
-function saveSettings(){['companyName','companyPhone','companyEmail','companyAddress','companyNif','defaultVat','hourlyRate','defaultWorkers','helperEnabled','helperHourly'].forEach(k=>{db.settings[k]=document.getElementById(k).value});db.settings.defaultVat=Number(db.settings.defaultVat)||0;db.settings.hourlyRate=Number(db.settings.hourlyRate)||0;db.settings.defaultWorkers=Math.max(1,Number(db.settings.defaultWorkers)||1);db.settings.helperHourly=Number(db.settings.helperHourly)||0;saveDB();alert('Configurações guardadas.')}
+function saveSettings(){['companyName','companyPhone','companyEmail','companyAddress','companyNif','companyLogoText','defaultVat','hourlyRate','defaultWorkers','helperEnabled','helperHourly'].forEach(k=>{db.settings[k]=document.getElementById(k).value});db.settings.defaultVat=Number(db.settings.defaultVat)||0;db.settings.hourlyRate=Number(db.settings.hourlyRate)||0;db.settings.defaultWorkers=Math.max(1,Number(db.settings.defaultWorkers)||1);db.settings.helperHourly=Number(db.settings.helperHourly)||0;saveDB();alert('Configurações guardadas.')}
 function loadSettings(){Object.keys(db.settings).forEach(k=>setVal(k,db.settings[k]))}
-function renderCatalog(){const cat=val('catalogCategory');const arr=db.catalog.filter(s=>!cat||s.category===cat);document.getElementById('catalogList').innerHTML=arr.map(s=>`<div class="item"><div class="item-top"><div><div class="item-title">${esc(s.name)}</div><div class="item-sub">${esc(s.category)} · unidade: ${esc(s.unit)}</div><div class="item-sub">${s.mode==='cost'?'Custo + margem':'Preço direto'} · preço base ${euro(s.price)}</div></div></div><div class="line-actions"><button class="small" onclick="editService('${s.id}')">Editar serviço</button><button class="small danger" onclick="deleteService('${s.id}')">Apagar</button></div></div>`).join('')||'<div class="card empty">Não existem serviços nesta categoria.</div>'}
+function renderCatalog(){const cat=val('catalogCategory');const arr=db.catalog.filter(s=>!cat||s.category===cat);document.getElementById('catalogList').innerHTML=arr.map(s=>`<div class="item"><div class="item-top"><div><div class="item-title">${esc(s.name)}</div><div class="item-sub">${esc(s.category)} · unidade: ${esc(s.unit)}</div><div class="item-sub">${s.mode==='cost'?'Custo + margem':'Preço direto'} · preço base ${euro(s.price)}${s.reference?' · referência indicativa':''}</div></div></div><div class="line-actions"><button class="small" onclick="editService('${s.id}')">Editar serviço</button><button class="small danger" onclick="deleteService('${s.id}')">Apagar</button></div></div>`).join('')||'<div class="card empty">Não existem serviços nesta categoria.</div>'}
 function openAddService(){const category=prompt('Categoria do serviço:',val('catalogCategory')||categories[0].name);if(!category)return;const name=prompt('Nome do serviço:');if(!name)return;const unit=prompt('Unidade (m², m³, ml, un, kg, hora, dia):','m²')||'un';const price=Number(prompt('Preço de venda por unidade em euros (0 se ainda não definido):','0'));db.catalog.push({id:uid(),category:category.trim(),name:name.trim(),unit:unit.trim(),price:Math.max(0,price||0),materials:0,other:0,hours:0,margin:20,mode:'direct'});saveDB();fillCategories();renderCatalog()}
 function editService(id){const s=db.catalog.find(x=>x.id===id);if(!s)return;const name=prompt('Nome do serviço:',s.name);if(name===null)return;const category=prompt('Categoria:',s.category);if(category===null)return;const unit=prompt('Unidade:',s.unit);if(unit===null)return;const price=prompt('Preço de venda por unidade (€):',s.price);if(price===null)return;const materials=prompt('Custo de materiais por unidade (€):',s.materials||0);if(materials===null)return;const other=prompt('Outros custos por unidade (€):',s.other||0);if(other===null)return;const hours=prompt('Horas de mão de obra por unidade:',s.hours||0);if(hours===null)return;const margin=prompt('Margem sobre o custo (%):',s.margin??20);if(margin===null)return;s.name=name.trim()||s.name;s.category=category.trim()||s.category;s.unit=unit.trim()||s.unit;s.price=Math.max(0,Number(price)||0);s.materials=Math.max(0,Number(materials)||0);s.other=Math.max(0,Number(other)||0);s.hours=Math.max(0,Number(hours)||0);s.margin=Math.max(0,Number(margin)||0);s.mode=confirm('Usar por defeito o modo Custo + margem? OK = sim, Cancelar = preço direto')?'cost':'direct';saveDB();fillCategories();renderCatalog()}
 function deleteService(id){if(!confirm('Apagar este serviço do catálogo? Os orçamentos já guardados não serão alterados.'))return;db.catalog=db.catalog.filter(s=>s.id!==id);saveDB();fillCategories();renderCatalog()}
@@ -63,11 +85,77 @@ function buildPrint(q){const t=totals(q),s=db.settings;const rows=q.lines.map(l=
 function previewPrint(){if(!currentQuote){alert('Abra um orçamento primeiro.');return}syncQuoteFromForm();document.getElementById('printArea').innerHTML=buildPrint(currentQuote);document.body.classList.add('printing');goPrint();setTimeout(()=>window.print(),150)}
 function goPrint(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('printArea').classList.add('active')}
 function printSaved(id){const q=db.quotes.find(x=>x.id===id);if(!q)return;document.getElementById('printArea').innerHTML=buildPrint(q);goPrint();setTimeout(()=>window.print(),150)}
-function syncQuoteFromForm(){Object.assign(currentQuote,{client:val('client').trim(),clientPhone:val('clientPhone'),date:val('quoteDate'),jobAddress:val('jobAddress'),validity:num('validity'),discount:num('discount'),vatRate:num('vatRate'),vatMode:val('vatMode'),notes:val('quoteNotes')});currentQuote.total=totals(currentQuote).total}
+function syncQuoteFromForm(){Object.assign(currentQuote,{client:val('client').trim(),clientPhone:val('clientPhone'),clientNif:val('clientNif'),clientEmail:val('clientEmail'),jobTitle:val('jobTitle'),date:val('quoteDate'),jobAddress:val('jobAddress'),validity:num('validity'),discount:num('discount'),vatRate:num('vatRate'),vatMode:val('vatMode'),notes:val('quoteNotes')});currentQuote.total=totals(currentQuote).total}
 function shareText(q){const t=totals(q);return `Orçamento ${q.number}\nCliente: ${q.client}\n${q.jobAddress?'Obra: '+q.jobAddress+'\n':''}Total: ${euro(t.total)}\nValidade: ${q.validity} dias\n\nPara receber o documento completo, peça o PDF ao remetente.`}
 async function shareQuote(){if(!currentQuote){alert('Abra um orçamento primeiro.');return}syncQuoteFromForm();await shareTextAction(currentQuote)}
 async function shareSaved(id){const q=db.quotes.find(x=>x.id===id);if(q)await shareTextAction(q)}
 async function shareTextAction(q){const text=shareText(q);if(navigator.share){try{await navigator.share({title:`Orçamento ${q.number}`,text});return}catch(e){if(e.name==='AbortError')return}}try{await navigator.clipboard.writeText(text);alert('Resumo copiado. Abra o WhatsApp e cole a mensagem. Para enviar o PDF, primeiro use Imprimir / guardar PDF e anexe o ficheiro.')}catch(e){prompt('Copie este resumo e cole no WhatsApp:',text)}}
 window.addEventListener('afterprint',()=>{document.getElementById('printArea').classList.remove('active');const last=document.getElementById('editor');if(currentQuote)last.classList.add('active');else document.getElementById('quotes').classList.add('active');document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.page===(currentQuote?'home':'quotes')))});
-loadDB();fillCategories();loadSettings();renderStats();renderSavedQuotes();
+
+// Pacote de parede/muro: preços-base indicativos para Portugal, com acabamentos separados.
+const wallRates={
+ block:{name:'Assentamento de bloco de betão',unit:'m²',price:18,scope:'Preço-base indicativo para assentamento; confirmar se materiais estão incluídos.'},
+ brick:{name:'Construção de parede de tijolo',unit:'m²',price:52.5,scope:'Referência publicada para parede de tijolo; confirmar composição e materiais.'},
+ render:{name:'Reboco de parede',unit:'m²',price:22.5,scope:'Referência de reboco; preparar e confirmar sistema/material.'},
+ paint:{name:'Pintura de parede interior',unit:'m²',price:12.5,scope:'Estimativa de pintura simples; preparação especial e IVA a confirmar.'}
+};
+function wallPackageData(){
+ const a=Math.max(0,Number(val('wallLength'))||0),h=Math.max(0,Number(val('wallHeight'))||0);
+ const openings=Math.max(0,Number(val('wallDoors'))||0)+Math.max(0,Number(val('wallWindows'))||0);
+ const area=Math.max(0,Math.round((a*h-openings)*100)/100),type=val('wallType');
+ const lines=[];
+ if(area>0){
+  const base=wallRates[type];
+  lines.push({name:base.name,price:base.price,qty:area,desc:base.scope});
+  if(document.getElementById('wallRenderA').checked)lines.push({name:'Reboco — face A',price:wallRates.render.price,qty:area,desc:wallRates.render.scope});
+  if(document.getElementById('wallRenderB').checked)lines.push({name:'Reboco — face B',price:wallRates.render.price,qty:area,desc:wallRates.render.scope});
+  if(document.getElementById('wallPaintA').checked)lines.push({name:'Pintura — face A',price:wallRates.paint.price,qty:area,desc:wallRates.paint.scope});
+  if(document.getElementById('wallPaintB').checked)lines.push({name:'Pintura — face B',price:wallRates.paint.price,qty:area,desc:wallRates.paint.scope});
+ }
+ return {area,lines,total:lines.reduce((s,l)=>s+l.qty*l.price,0)};
+}
+function updateWallPackage(){
+ const d=wallPackageData();
+ const areaEl=document.getElementById('wallAreaResult');if(!areaEl)return;
+ areaEl.textContent=`Área líquida de parede: ${d.area.toLocaleString('pt-PT',{maximumFractionDigits:2})} m²`;
+ const el=document.getElementById('wallPackagePreview');if(!el)return;
+ el.innerHTML=`<div>Estimativa das etapas selecionadas</div><div class="big">${euro(d.total)}</div>`+
+  (d.lines.length?d.lines.map(l=>`<div class="totalrow"><span>${esc(l.name)} (${l.qty.toLocaleString('pt-PT')} m² × ${euro(l.price)})</span><strong>${euro(l.qty*l.price)}</strong></div>`).join(''):'<div class="totalrow">Introduza medidas válidas e escolha acabamentos.</div>')+
+  `<div class="help" style="color:#e0e9e3">Valores de referência editáveis; confirme o âmbito e os materiais.</div>`;
+}
+function addWallPackage(){
+ if(!currentQuote){alert('Abra primeiro um orçamento.');return}
+ const d=wallPackageData();if(d.area<=0||!d.lines.length){alert('Indique comprimento e altura válidos.');return}
+ const type=val('wallType');
+ d.lines.forEach((l,i)=>currentQuote.lines.push({id:uid(),serviceId:null,category:'Muros e alvenaria',name:l.name,description:l.desc,unit:'m²',quantity:d.area,unitPrice:l.price,total:d.area*l.price,priceMode:'direct',costUnit:null,margin:null,materials:null,other:null,hours:null,calculation:`Parede ${val('wallLength')} m × ${val('wallHeight')} m − vãos ${((Number(val('wallDoors'))||0)+(Number(val('wallWindows'))||0)).toLocaleString('pt-PT')} m²`,referencePrice:true}));
+ renderLines();document.getElementById('quoteLines').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+
+// V3: calculadoras rápidas, repetição de orçamentos.
+function quickCandidates(){
+ const type=val('quickType');
+ const map={paint:['m²',['Pintura interior','Pintura exterior','Preparação e lixagem']],floor:['m²',['Assentamento de cerâmica','Aplicação de pavimento flutuante','Betonilha de regularização']],concrete:['m³',['Betão armado','Escavação']],plasterboard:['m²',['Parede em pladur','Teto falso em pladur','Isolamento térmico']],roof:['m²',['Reparação de telhado','Impermeabilização','Aplicação de telha']],linear:['ml',['Limpeza de caleiras','Rodapé','Instalação de tubagem','Passagem de cabos']]};
+ const c=map[type]||map.paint;return {unit:c[0],items:db.catalog.filter(s=>c[1].includes(s.name))};
+}
+function renderQuickCalc(){
+ const type=val('quickType');if(!document.getElementById('quickType'))return;
+ const conf={paint:['Comprimento (m)','Altura (m)'],floor:['Comprimento (m)','Largura (m)'],concrete:['Comprimento (m)','Largura (m)'],plasterboard:['Comprimento (m)','Altura (m)'],roof:['Comprimento (m)','Largura (m)'],linear:['Comprimento (m)','']}[type]||['Comprimento (m)','Largura (m)'];
+ document.getElementById('quickALabel').textContent=conf[0];document.getElementById('quickBLabel').textContent=conf[1];
+ document.getElementById('quickBWrap').classList.toggle('hidden',type==='linear');
+ document.getElementById('quickDepthWrap').classList.toggle('hidden',type!=='concrete');
+ document.getElementById('quickOpenings').classList.toggle('hidden',type!=='paint'&&type!=='plasterboard');
+ const {items}=quickCandidates();document.getElementById('quickService').innerHTML=items.map(s=>`<option value="${s.id}">${esc(s.name)} — ${euro(s.price)}/${esc(s.unit)}</option>`).join('');
+ updateQuickCalc();
+}
+function quickCalcData(){
+ const type=val('quickType'),a=num('quickA'),b=num('quickB'),s=db.catalog.find(x=>x.id===val('quickService'));let q=type==='linear'?a:(type==='concrete'?a*b*num('quickDepth'):a*b);
+ if(type==='paint'||type==='plasterboard')q=Math.max(0,q-num('quickDoors')-num('quickWindows'));
+ q=Math.round(q*(1+Math.min(100,num('quickWaste'))/100)*100)/100;return {q,s,type};
+}
+function updateQuickCalc(){if(!document.getElementById('quickType'))return;const d=quickCalcData();document.getElementById('quickResult').textContent=d.s?`Quantidade calculada: ${d.q.toLocaleString('pt-PT',{maximumFractionDigits:2})} ${d.s.unit} · Preço-base: ${euro(d.s.price)}/${d.s.unit} · Total estimado: ${euro(d.q*d.s.price)}`:'Escolha um serviço.'}
+function addQuickLine(){if(!currentQuote){alert('Abra primeiro um orçamento.');return}const d=quickCalcData();if(!d.s||d.q<=0){alert('Indique medidas válidas e escolha um serviço.');return}currentQuote.lines.push({id:uid(),serviceId:d.s.id,category:d.s.category,name:d.s.name,description:'Calculadora rápida — confirmar materiais e âmbito',unit:d.s.unit,quantity:d.q,unitPrice:d.s.price,total:d.q*d.s.price,priceMode:'direct',calculation:`Calculadora ${d.type}`,referencePrice:!!d.s.reference});renderLines();document.getElementById('quoteLines').scrollIntoView({behavior:'smooth',block:'start'})}
+function duplicateQuote(id){const original=db.quotes.find(q=>q.id===id);if(!original)return;const copy=JSON.parse(JSON.stringify(original));copy.id=uid();copy.number='ORC-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-5);copy.date=new Date().toISOString().slice(0,10);copy.createdAt=new Date().toISOString();copy.updatedAt=copy.createdAt;copy.client='';copy.clientPhone='';copy.clientNif='';copy.clientEmail='';populateEditor(copy)}
+
+loadDB();applyReferencePricesToEmptyCatalog();fillCategories();loadSettings();renderStats();renderSavedQuotes();renderQuickCalc();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
